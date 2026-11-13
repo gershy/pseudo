@@ -3,7 +3,7 @@
 Infinitely-high-level, typescript-based, compiled programming language. See the agent orientation:
 
 ```bash
-npx tsx -e "import('@gershy/noah').then(n => console.log(n.llmOrientation()))"
+npx tsx -e "import('@gershy/pseudo').then(n => console.log(n.agentOrientation()))"
 ```
 
 ## The basic premise
@@ -17,7 +17,7 @@ for (const head of headValues)
     if (comparison(head, tail))
       
       // Fuzzy logic!
-      await fuzzy(`write a csv document into ${s3Bucket} constrasting ${head} and ${tail}, and email all subscribers a link to the resulting s3 object using ${headTailEmailTemplate}`);
+      await fuzzy(`write a csv document into ${s3Bucket} contrasting ${head} and ${tail}, and email all subscribers a link to the resulting s3 object using ${headTailEmailTemplate}`);
 ```
 
 ## Why?
