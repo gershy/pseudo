@@ -1,7 +1,7 @@
 {
   
   "name": "@gershy/pseudo",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Gershom Maes",
   "repository": { "type": "git", "url": "git+https://github.com/gershy/pseudo.git" },
   

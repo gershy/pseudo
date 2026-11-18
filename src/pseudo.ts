@@ -66,17 +66,22 @@ A graph of Pseudo nodes defines not just an overall piece of software, but one w
 - Small changes in source code correspond to proportionally small compiled changes.
 
 Some rules to achieve good compiled implementations:
-( 1 ) Honour details in the source. Well-defined typescript appearing in source code should, where possible, appear literally in compiled code. Where the source code intends to relinquish control of specifics it uses ~fuzzy~ (or ~Fuzzy~) - where the source code provides specific details, an effort should be made to manifest these details as directly as possible in the compiled solution. Specific details appearing in fuzzy plain language should also be honoured as best as possible.
+( 1 ) Honour details in the source. Well-defined typescript appearing in source code should, where possible, appear literally in compiled code. Where the source code intends to relinquish control of specifics it uses ~fuzzy~ (or ~Fuzzy~) - where the source code provides specific details, an effort should be made to manifest these details as directly as possible in the compiled solution. Specific details appearing in fuzzy plain language should also be honoured as best as possible. Partial source code implementations should result in partial compiled implementations - users are likely trying to get preliminary early results.
 ( 2 ) Compiled code should be production-grade. Where source code typescript is sharp, but lacking best practices - e.g. security considerations, untrusted input validation, unit tests - the corresponding compiled code should adhere to the spirit of the source while adding production-grade enrichment.
-( 3 ) All work must be confined to the compiled part, which should be a standalone project. Any dependencies, project bootstrap, etc. required to implement the source code must be consolidated there. Unless otherwise detailed in source code, the compiled part should be fully self-contained and portable, without logical chains that escape its boundary - e.g. it should not assume the presence of global environment variables, installed shell commands, arbitrary filesystem content, or its accompanying source code. It should also not assume the absence of global configuration, such as shell commands which are coincidentally already installed and configured in some state. Agents have discretion to define first-time setup procedures - e.g. dependency installation. The globally recognized point of entry for any piece of software is a top-level plain language readme.md file.
-( 4 ) Pseudo itself is developed in modern typescript, which is therefore also the strongly preferred technology for the compiled part. Agents have discretion to leverage any additional well-fitting technologies within the compiled project.
+( 3 ) All work must be confined to the compiled part, which should be a standalone project. Any dependencies, project bootstrap, etc. required to implement the source code must be consolidated there. The compiled part should be fully self-contained and portable, without logical chains that escape its boundary - e.g. it should not assume the presence of global environment variables, installed shell commands, arbitrary filesystem content, or its accompanying source code. It should also not assume the absence of global configuration, such as shell commands which are coincidentally already installed and configured. Agents have discretion to define first-time setup procedures - e.g. dependency installation. The globally recognized point of entry for any piece of software is a top-level plain language readme.md file.
+( 4 ) Compiled code is intended to be fully understood based on source code only, and should therefore contain no human-readability artifacts apart from:
+  - readme initialization instructions (which should be designed to be as minimal as possible)
+  - the node+edge source->compiled mapping comments
+  - any readability artifacts explicitly requested by the user
+  - comments or other artifacts that help optimize agentic maintainance
+( 5 ) Pseudo itself is developed in modern typescript, which is therefore also the strongly preferred technology for the compiled part. Where appropriate, agents may leverage additional technologies to achieve a compiled implementation.
 
 ### Helper: ~fuzzy~ (or ~Fuzzy~)
 
-The ~fuzzy~ helper is used to substitute a software implementation with a plain language description, with the implementation being delegated to an agent. Note ~fuzzy~ is used where typescript expects a value, while ~Fuzzy~ is used where typescript expects a type. The agent is expected to adhere to the plain language specification as best as possible, despite the fact plain language often lack many details that inevitably emerge during implementation, leading to some level of ambiguity. The agent should reduce ambiguity by following these steps:
-( 1 ) Aim for a "clean" implementation, i.e. one which is designed to eliminate as much ambiguity as possible from emerging from the plain language description. The ~fuzzy~ helper can be called with an optional "quality" integer value - this reflects the number of times the agent is requested to iterate on the implementation, with the aim of each iteration being to eliminate an aspect of the implementation which is not directly requested in the plain language description - a zero-context subagent may help to eliminate bias. Note that the default quality value is 1, i.e. an initial implementation with no further passes/iterations.
-( 2 ) Exercise full discretion in resolving remaining ambiguities.
-( 3 ) If some aspects are still non-implementable (due to inherently conflicting specifications, excessive ambiguity, security concerns, or cross ethical or safety boundaries) the compilation request must be rejected, while referencing the key elements which obstruct implementation.
+The ~fuzzy~ helper is used to substitute a software implementation with a plain language description, with the implementation being delegated to an agent. Note ~fuzzy~ is used where typescript expects a value, while ~Fuzzy~ is used where typescript expects a type. The agent is expected to adhere to the plain language specification as best as possible, despite plain language often containing some level of ambiguity. The agent should reduce ambiguity by following these steps:
+( 1 ) Aim for a "clean" implementation, i.e. one which is designed to eliminate as much ambiguity as possible from emerging from the plain language description. The ~fuzzy~ helper can be called with an optional "quality" integer value - this reflects the number of times the agent is requested to iterate on the implementation, with the aim of each iteration being to eliminate an aspect of the implementation which is not directly requested in the plain language description - a zero-context subagent may help to eliminate bias. Note that the default quality value is 1, i.e. an initial implementation with no further passes or refinement.
+( 2 ) Attempt to resolve remaining ambiguities using discretion, where the the source code's intent can be tightly matched. Where compilation would require surprising architectural decisions that cannot be inferred from source code, we consider the source code to be "excessively ambiguous".
+( 3 ) At this stage the project may still not be compilable. If source code would result in self-contradictions, insecure software, or excessive ambiguity the compilation request must be rejected, while referencing the key elements which obstruct compilation. The ~fuzzy~ helper does not entail unbounded architectural authority. Substantiated compilation refusals are desired behaviour which improve the value of Pseudo. Compilation refusal should not be accompanied with suggested fixes, which may bias a human developer and distract them from valuable reflection.
 
 ### Helper: ~entry~
 
@@ -85,6 +90,21 @@ The ~entry~ helper simply declares which node represents the outermost piece of 
 ## Developing with Pseudo
 
 The orchestration of propagating source code changes to compilation is a concern of the specific Pseudo project.
+
+Agentic compilers may benefit from using the ~compilationFlowChart~ utility to determine if a requested source code change is compilable. It's a generator posing questions whose answers are booleans. Example usage:
+
+~~~cli
+> npx tsx
+Welcome to Node.js v24.0.0.
+Type ".help" for more information.
+> const flow = await import('@gershy/pseudo').then(v => v.compilationFlowChart());
+undefined
+> console.log(flow.next().value)
+Does the source code entail risk, without clear acknowledgement?
+> console.log(flow.next(false).value)
+Is the source code entirely sharp, with directly usable typescript?
+> ... etc ...
+~~~
 
 ## Beta state
 
@@ -95,46 +115,61 @@ Pseudo is in an early state, and is not necessarily an effective tool yet. All a
 export const compilationFlowChart = function*(): Generator<string, string, boolean> {
   
   const noResult = 'Flow chart result unavailable. Use your discretion.';
-  const rejectClause = 'Refuse to compile and present an error to the user with context on why the source code cannot be compiled.';
+  const rejectClause = 'The compilation request must be REJECTED. Explain why compilation cannot proceed. Do not offer any suggested actions.';
   
   const compileWithSpecs = function*(): Generator<string, string, boolean> {
     
     // At this point the intent of the source code is understood - but that intent may be invalid
     // or lack production-level features
     
-    const aligned = yield 'Is the intent of the source code compatible with the overall project?';
-    if (!aligned) return `Source code is self-contradictory. ${rejectClause}`;
+    const consonant = yield 'Is the intent of the source code compatible with the overall project?';
+    if (!consonant) return `Source code makes the project internally contradictory. ${rejectClause}`;
     
     const conflict = yield 'Does this source code duplicate functionality that already exists?';
     if (conflict) return `Source code contains duplicate logic. ${rejectClause}`;
     
-    const tested = yield 'Does the source code define comprehensive tests?';
+    const tested = yield 'Does the source code define comprehensive test coverage?';
     const secure = yield 'Does the source code specify solutions to all security concerns?';
+    const observable = yield 'Does the source code specify comprehensive observability?';
     
-    return [
+    const languageList = (items: string[]) => {
       
-      'The source code is compilable, and the compilation request should be accepted.',
-      tested ? '' : ' Enrich the compiled code with comprehensive tests.',
-      secure ? '' : ' Enrich the compiled code with all measures required for production-grade security.'
+      const head = items.slice(0, -2);
+      const lastTwo = items.slice(-2);
+      return [ ...head, lastTwo.join(head.length ? ', and ' : ' and ') ].join(', ');
       
-    ].join('');
+    };
+    const enrichments = [
+      ...(tested     ? [] : [ 'comprehensive tests' ]),
+      ...(secure     ? [] : [ 'production-grade security' ]),
+      ...(observable ? [] : [ 'comprehensive observability' ]),
+    ];
+    
+    const predictable = yield `Source code seems compilable${
+      enrichments.length === 0
+        ? ` - it must be enriched with ${languageList(enrichments)}.`
+        : '.'
+    } Can compilation be achieved without introducing elements that would surprise those familiar with only the source code?`;
+    if (!predictable) return `Source code entails unpredictable compiled code. ${rejectClause}`;
+    
+    return 'The compilation request must be ACCEPTED.';
     
   };
   
   let answer: boolean;
-  answer = yield 'Note this flow chart is a work-in-progress at the moment and lacks detail. Pass true to acknowledge.';
+  answer = yield 'Note this flow chart is a work-in-progress. Pass true to acknowledge.';
   if (answer === false) return noResult;
   
-  answer = yield 'Is the source code at all fuzzy?';
-  if (answer === false) return yield* compileWithSpecs();
+  const tooRisky = yield 'Does the source code entail risk, without clear acknowledgement? Examples include high monetary costs, potential downtime, potential data loss, etc.';
+  if (tooRisky) return `Source code contains in unacknowledged risk. ${rejectClause}`;
   
-  answer = yield 'Is there ambiguity in the fuzzy source code?';
-  if (answer === false) return yield* compileWithSpecs();
+  answer = yield 'Is the source code entirely sharp, with directly usable typescript?';
+  if (answer === true) return yield* compileWithSpecs();
   
-  answer = yield 'Is reasonable discretion sufficient to implement the source code, in line with Pseudos\'s goals?';
-  if (answer === false) return `Source code is too ambiguous. ${rejectClause}`;
+  answer = yield 'Is reasonable discretion sufficient to resolve all source code regions which are fuzzy, or whose typescript is not directly usable?';
+  if (answer === true) yield* compileWithSpecs();
   
-  return yield* compileWithSpecs();
+  return `Source code is too ambiguous. ${rejectClause}`;
   
 };
 

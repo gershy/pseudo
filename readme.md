@@ -16,7 +16,7 @@ for (const head of headValues)
   for (const tail of tailValues)
     if (comparison(head, tail))
       
-      // Fuzzy logic!
+      // Fuzzy logic:
       await fuzzy(`write a csv document into ${s3Bucket} contrasting ${head} and ${tail}, and email all subscribers a link to the resulting s3 object using ${headTailEmailTemplate}`);
 ```
 
